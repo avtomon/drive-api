@@ -1,6 +1,8 @@
 var drives = [],
     files = [];
 
+var error; //handler function of exceptions
+
 function DriveAPI (label, folders, cfg)
 {
     var config = {},
@@ -125,7 +127,7 @@ DriveAPI.prototype.getFiles = function (callback, folder_id)
         success: callback ? callback : this.success,
         error: function (jqXHR, textStatus)
         {
-            throw new Error('Не удалось получить список файлов из папки ' + self.label);
+            error('Не удалось получить список файлов из папки ' + self.label);
         }
     });
 };
@@ -188,7 +190,7 @@ DriveAPI.prototype.uploadFile = function (file, callback, folder_id)
             success: callback ? callback : self.success,
             error: function (jqXHR, textStatus)
             {
-                throw new Error('Не удалось записать файл. Ошибка: ' + textStatus);
+                error('Не удалось записать файл. Ошибка: ' + textStatus);
             }
         });
     };
@@ -270,7 +272,7 @@ DriveAPI.prototype.uploadResumable = function (file, callback, folder_id)
                     len = self.readChunk(reader, file, shank, last_size);
                     return false;
                 }
-                throw new Error('Не удалось записать файл. Повторите позже');
+                error('Не удалось записать файл. Повторите позже');
             }
         }
     });
@@ -401,7 +403,7 @@ DriveAPI.prototype.updateFile = function (e, file_id, callback)
                 success: callback ? callback : self.success,
                 error: function (jqXHR, textStatus)
                 {
-                    throw new Error('не удалось изменить файл. Ошибка: ' + textStatus);
+                    error('не удалось изменить файл. Ошибка: ' + textStatus);
                 }
             });
         };
@@ -444,7 +446,7 @@ DriveAPI.prototype.createFolder = function (callback)
         success: callback ? callback : this.success,
         error: function (jqXHR, textStatus)
         {
-            throw new Error('Не удалось создать директорию. Ошибка: ' + textStatus);
+            error('Не удалось создать директорию. Ошибка: ' + textStatus);
         }
     });
 };
@@ -466,7 +468,7 @@ DriveAPI.prototype.delete = function (id, callback)
         success: callback ? callback : this.success,
         error: function (jqXHR, textStatus)
         {
-            throw new Error('Не удалось удалить файл или директорию. Ошибка: ' + textStatus);
+            error('Не удалось удалить файл или директорию. Ошибка: ' + textStatus);
         }
     });
 };
@@ -498,28 +500,21 @@ DriveAPI.prototype.setToken = function ()
     if (!this.token)
     {
         var self = this;
-        /*$.get('tests/Google_Drive_test.php', function (token)
-        {
-            if (token && token.length == 77)
+        $.ajax({
+            async: false,
+            url: this.config.SERVER_URL,
+            success: function (token)
             {
-                self.token = token;
-            }
-            else
-            {
-                throw new Error('Получен неверный токен от сервера');
-            }
-        });*/
-        var params = {
-            class: 'Material',
-            method: 'getGoogleToken'
-        };
-        request(params, false, 'GET', function (data)
-        {
-            if (data.success)
-            {
-                self.token = data.success;
-            }
-            else
+                if (token.length == 77)
+                {
+                    self.token = token;
+                }
+                else
+                {
+                    throw new Error('Получен неверный токен от сервера');
+                }
+            },
+            error: function ()
             {
                 throw new Error('Получен неверный токен от сервера');
             }

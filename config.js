@@ -16,5 +16,6 @@ config = {
     },
     DRIVE_FILE_INFO: 'thumbnailLink,id,mimeType,description,title,webContentLink',
     BOUNDARY: '-------314159265358979323846',
-    CHUNK_SIZE: 5242880
+    CHUNK_SIZE: 5242880,
+    SERVER_URL: 'Google_Drive_token.php'
 };
