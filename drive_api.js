@@ -107,6 +107,30 @@ DriveAPI.prototype.deleteFolder = function (label)
     return this.folders;
 };
 
+DriveAPI.prototype.getFile = function (callback, file_id)
+{
+    var self = this;
+
+    $.ajax({
+        type: 'GET',
+        url: 'https://www.googleapis.com/drive/v2/files/' + file_id,
+        dataType: 'json',
+        data:
+        {
+            fields: 'items(' + this.config.DRIVE_FILE_INFO + ')'
+        },
+        headers: {
+            authorization: 'Bearer ' + this.token
+        },
+        async: true,
+        success: callback ? callback : this.success,
+        error: function ()
+        {
+            error('Не удалось получить файл');
+        }
+    });
+};
+
 DriveAPI.prototype.getFiles = function (callback, folder_id)
 {
     var self = this;
