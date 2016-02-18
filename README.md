@@ -64,14 +64,14 @@ DriveAPI – продукт для реализации возможности �
 
 **checkConfig** – проверяет наличие и верный формат всех необходимых для корректной работы модуля директив конфигурации.
 
-DriveAPI.**prototype**.checkConfig = **function** ()
+```DriveAPI.prototype.checkConfig = function ()```
 
 *Параметры:* нет
 
 
 ##### initFolders – устанавливает массив директорий для записи.
 
-DriveAPI.**prototype**.initFolders = **function** (folders)
+```DriveAPI.prototype.initFolders = function (folders)```
 
 *Параметры:*
 
@@ -79,7 +79,7 @@ DriveAPI.**prototype**.initFolders = **function** (folders)
 
 **setActiveFolder** – устанавливает активную директорию, в которую будут писаться файлы по умолчанию. Строго говоря для активная директория актуальна и для метода getFiles, если при его вызове не задавать второй параметр, но такое использование getFiles лично мне не видится правильным.
 
-DriveAPI.**prototype**.setActiveFolder = **function**(label)
+```DriveAPI.prototype.setActiveFolder = function (label)```
 
 *Параметры:*
 
@@ -87,7 +87,7 @@ DriveAPI.**prototype**.setActiveFolder = **function**(label)
 
 **addFolder** - добавляет дополнительную директория для записи и чтения
 
-DriveAPI.**prototype**.addFolder = **function** (label, folder\_id)
+```DriveAPI.prototype.addFolder = function (label, folder\_id)```
 
 *Параметры:*
 
@@ -97,7 +97,7 @@ DriveAPI.**prototype**.addFolder = **function** (label, folder\_id)
 
 **deleteFolder** - удаляет элемент списка доступных директорий.
 
-DriveAPI.**prototype**.deleteFolder = **function** (label)
+```DriveAPI.prototype.deleteFolder = function (label)```
 
 *Параметры:*
 
@@ -105,7 +105,7 @@ DriveAPI.**prototype**.deleteFolder = **function** (label)
 
 **getFile** - получить информацию о загруженном файле
 
-DriveAPI.**prototype**.getFile = **function** (callback, file\_id)
+```DriveAPI.prototype.getFile = function (callback, file\_id)```
 
 *Параметры:*
 
@@ -114,7 +114,7 @@ DriveAPI.**prototype**.getFile = **function** (callback, file\_id)
 
 **getFiles** - Получить информацию обо всех файлах из директории.
 
-DriveAPI.**prototype**.getFiles = **function** (callback, folder\_id)
+```DriveAPI.prototype.getFiles = function (callback, folder\_id)```
 
 *Параметры:*
 
@@ -123,7 +123,7 @@ DriveAPI.**prototype**.getFiles = **function** (callback, folder\_id)
 
 **uploadFile** - загрузка файла в хранилище multipart-способом.
 
-DriveAPI.**prototype**.uploadFile = **function** (file, callback, folder\_id)
+```DriveAPI.prototype.uploadFile = function (file, callback, folder\_id)```
 
 *Параметры:*
 
@@ -133,7 +133,7 @@ DriveAPI.**prototype**.uploadFile = **function** (file, callback, folder\_id)
 
 **IEBinary** – формирует байтовую последовательность из файла или части файла (актуально для IE)
 
-DriveAPI.**prototype**.IEBinary = **function** (buffer)
+```DriveAPI.prototype.IEBinary = function (buffer)```
 
 *Параметры:*
 
@@ -141,7 +141,7 @@ DriveAPI.**prototype**.IEBinary = **function** (buffer)
 
 **getChunkRange** - формирует заголовок для задания интервала байт, части файла, которая будет отправляться на сервер.
 
-DriveAPI.**prototype**.getChunkRange = **function** (total\_size, last\_size)
+```DriveAPI.prototype.getChunkRange = function (total\_size, last\_size)```
 
 *Параметры:*
 
@@ -150,7 +150,7 @@ DriveAPI.**prototype**.getChunkRange = **function** (total\_size, last\_size)
 
 **uploadResumable** - загрузка файла на сервер с использование докачки.
 
-DriveAPI.**prototype**.uploadResumable = **function** (file, callback, folder\_id)
+```DriveAPI.prototype.uploadResumable = function (file, callback, folder\_id)```
 
 *Параметры:*
 
@@ -160,7 +160,7 @@ DriveAPI.**prototype**.uploadResumable = **function** (file, callback, folder\_i
 
 **readChunk** - читает часть файла.
 
-DriveAPI.**prototype**.readChunk = **function** (reader, file, shank, last\_size)
+```DriveAPI.prototype.readChunk = function (reader, file, shank, last\_size)```
 
 *Параметры:*
 
@@ -171,7 +171,7 @@ DriveAPI.**prototype**.readChunk = **function** (reader, file, shank, last\_size
 
 **updateFile** - меняет уже загруженный в хранилище файл на новый, загруженный multipart-способом.
 
-DriveAPI.**prototype**.updateFile = **function** (file, file\_id, callback)
+```DriveAPI.prototype.updateFile = function (file, file\_id, callback)```
 
 *Параметры:*
 
@@ -181,7 +181,7 @@ DriveAPI.**prototype**.updateFile = **function** (file, file\_id, callback)
 
 **updateResumable** - меняет уже загруженный в хранилище файл на новый, загруженный resumable-способом.
 
-DriveAPI.**prototype**.updateResumable = **function** (file, file\_id, callback)
+```DriveAPI.prototype.updateResumable = function (file, file\_id, callback)```
 
 *Параметры:*
 
@@ -191,7 +191,7 @@ DriveAPI.**prototype**.updateResumable = **function** (file, file\_id, callback)
 
 **createFolder** - создает директорию в хранилище и возвращает ее идентификатор.
 
-DriveAPI.**prototype**.createFolder = **function** (callback, parent\_id)
+```DriveAPI.prototype.createFolder = function (callback, parent\_id)```
 
 *Параметры:*
 
@@ -200,7 +200,7 @@ DriveAPI.**prototype**.createFolder = **function** (callback, parent\_id)
 
 **delete** - удаляет файл или директорию из хранилища
 
-DriveAPI.**prototype**.delete = **function** (id, callback)
+```DriveAPI.prototype.delete = function (id, callback)```
 
 *Параметры:*
 
@@ -209,18 +209,18 @@ DriveAPI.**prototype**.delete = **function** (id, callback)
 
 **getInternetExplorerVersion** - возвращает версию браузера, если это IE
 
-DriveAPI.**prototype**.getInternetExplorerVersion = **function** ()
+```DriveAPI.prototype.getInternetExplorerVersion = function ()```
 
 *Параметры:* нет.
 
 **setToken** - запрашивает у сервера токен для доступа к хранилищу и сохраняет его в объекте.
 
-DriveAPI.**prototype**.setToken = **function** ()
+```DriveAPI.prototype.setToken = function ()```
 
 *Параметры:* нет
 
 **deleteToken** - Удаляет токен для доступа к хранилищу
 
-DriveAPI.**prototype**.deleteToken = **function** ()
+```DriveAPI.prototype.deleteToken = function ()```
 
 *Параметры:* нет.
