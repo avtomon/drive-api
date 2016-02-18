@@ -52,7 +52,7 @@ DriveAPI – продукт для реализации возможности �
 
 **DriveAPI** – конструктор класса.
 
-**function** *DriveAPI* (label, folders, cfg)
+```function DriveAPI (label, folders, cfg)```
 
 *Параметры:*
 
