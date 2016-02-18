@@ -3,6 +3,14 @@ var drives = [],
 
 var error; //handler function of exceptions
 
+/**
+ * Конструктор класса
+ *
+ * @param label - идентификатор директории, в которую предполагается писать
+ * @param folders - список директорий для записи и чтения
+ * @param cfg - объект конфигурации, перепишет элементы считанного из config.js при совпадении ключей
+ * @constructor
+ */
 function DriveAPI (label, folders, cfg)
 {
     var config = {},
@@ -41,6 +49,10 @@ function DriveAPI (label, folders, cfg)
     this.setToken();
 }
 
+
+/**
+ *  Проверяет наличие и верный формат всех необходимых для корректной работы модуля директив конфигурации
+ */
 DriveAPI.prototype.checkConfig = function ()
 {
     var cfg = this.config;
@@ -69,12 +81,28 @@ DriveAPI.prototype.checkConfig = function ()
     }
 };
 
+/**
+ * Устанавливает массив директорий для записи
+ *
+ * @param folders - массив идентификаторов папок
+ * @returns {*}
+ */
 DriveAPI.prototype.initFolders = function (folders)
 {
-    this.folders = folders;
-    return this.folders;
+    if (typeof folders == 'object')
+    {
+        this.folders = folders;
+        return this.folders;
+    }
+    return false;
 };
 
+/**
+ * Устанавливает активную директорию
+ *
+ * @param label - идетификатор директории
+ * @returns {*}
+ */
 DriveAPI.prototype.setActiveFolder = function(label)
 {
     if (this.folders[label])
@@ -89,6 +117,14 @@ DriveAPI.prototype.setActiveFolder = function(label)
     }
 };
 
+
+/**
+ * Добавляет дополнительную директория для записи и чтения
+ *
+ * @param label - идентификатор директории в объекте
+ * @param folder_id - идетификатор директории в хранилище
+ * @returns {*}
+ */
 DriveAPI.prototype.addFolder = function (label, folder_id)
 {
     if (folder_id && label)
@@ -101,12 +137,25 @@ DriveAPI.prototype.addFolder = function (label, folder_id)
     }
 };
 
+/**
+ * Удаляет элемент списка доступных директорий
+ *
+ * @param label - идентификатор удаляемой директории
+ * @returns {*}
+ */
 DriveAPI.prototype.deleteFolder = function (label)
 {
     delete this.folders[label];
     return this.folders;
 };
 
+/**
+ * Получить информацию о загруженном файле
+ *
+ * @param callback - функция, выполняющаяся при успешном получении информации от хранилища
+ * @param file_id - идетификатор файла в хранилище
+ * @returns {boolean}
+ */
 DriveAPI.prototype.getFile = function (callback, file_id)
 {
     var self = this;
@@ -129,8 +178,16 @@ DriveAPI.prototype.getFile = function (callback, file_id)
             error('Не удалось получить файл');
         }
     });
+    return false;
 };
 
+/**
+ * Получить информацию обо всех файлах из директории
+ *
+ * @param callback - функция, выполняющаяся при успешном получении информации о файлах
+ * @param folder_id - идентификатор директории
+ * @returns {boolean}
+ */
 DriveAPI.prototype.getFiles = function (callback, folder_id)
 {
     var self = this;
@@ -149,13 +206,21 @@ DriveAPI.prototype.getFiles = function (callback, folder_id)
         },
         async: true,
         success: callback ? callback : this.success,
-        error: function (jqXHR, textStatus)
+        error: function ()
         {
             error('Не удалось получить список файлов из папки ' + self.label);
         }
     });
+    return false;
 };
 
+/**
+ * Загрузка файла в хранилище multipart-способом
+ *
+ * @param file - файл из input[type=file]
+ * @param callback - функция-обработчик успешной загрузки
+ * @param folder_id - идентификатор родительской директории для файла
+ */
 DriveAPI.prototype.uploadFile = function (file, callback, folder_id)
 {
     var self = this,
@@ -228,6 +293,13 @@ DriveAPI.prototype.uploadFile = function (file, callback, folder_id)
     }
 };
 
+/**
+ * Формирует байтовую последовательность из файла или части файла (актуально для IE)
+ *
+ * @param buffer - содержимое файла
+ * @returns {string}
+ * @constructor
+ */
 DriveAPI.prototype.IEBinary = function (buffer)
 {
     var binary = '',
@@ -241,6 +313,13 @@ DriveAPI.prototype.IEBinary = function (buffer)
     return binary;
 };
 
+/**
+ * Формирует заголовок для задания интервала байт, части файла, которая будет отправляться на сервер
+ *
+ * @param total_size - общий размер файла в байтах
+ * @param last_size - начальное значение для интервала
+ * @returns {string}
+ */
 DriveAPI.prototype.getChunkRange = function (total_size, last_size)
 {
     if (last_size + this.config.CHUNK_SIZE < total_size)
@@ -253,6 +332,13 @@ DriveAPI.prototype.getChunkRange = function (total_size, last_size)
     }
 };
 
+/**
+ * Загрузка файла на сервер с использование докачки
+ *
+ * @param file - файл из input[type=file]
+ * @param callback - функция-обработчик успешной загрузки файла
+ * @param folder_id - идентификатор родительской директории для файла
+ */
 DriveAPI.prototype.uploadResumable = function (file, callback, folder_id)
 {
     var self = this,
@@ -350,6 +436,15 @@ DriveAPI.prototype.uploadResumable = function (file, callback, folder_id)
     };
 };
 
+/**
+ * Читает часть файла
+ *
+ * @param reader - объект FileReader()
+ * @param file - файл
+ * @param shank - размер считываемого куска
+ * @param last_size - с какого места читать
+ * @returns {*}
+ */
 DriveAPI.prototype.readChunk = function (reader, file, shank, last_size)
 {
     var len = shank < this.config.CHUNK_SIZE ? shank : this.config.CHUNK_SIZE,
@@ -366,86 +461,192 @@ DriveAPI.prototype.readChunk = function (reader, file, shank, last_size)
     return len;
 };
 
-DriveAPI.prototype.updateFile = function (e, file_id, callback)
+/**
+ * Меняет уже загруженный в хранилище файл на новый, загруженный multipart-способом
+ *
+ * @param file - файл из input[type=file]
+ * @param file_id - идентификатор меняемого файла
+ * @param callback - функция-обработчик успешного изменения файла
+ */
+DriveAPI.prototype.updateFile = function (file, file_id, callback)
 {
     var self = this,
-        files = e.target.files,
         result;
 
     const delimiter = "\r\n--" + this.config.BOUNDARY + "\r\n";
     const close_delim = "\r\n--" + this.config.BOUNDARY + "--";
 
-    for (var i = 0, f; f = files[i]; i++) {
-        var file = f,
-            reader = new FileReader();
+    var reader = new FileReader();
 
-        reader.onloadend = function(event)
-        {
-            var contentType = file.type || 'application/octet-stream',
-                metadata = {
-                    title: file.name,
-                    mimeType: contentType,
-                    parents: [
-                        {
-                            id: file_id
-                        }
-                    ]
-                };
+    reader.onloadend = function(event)
+    {
+        var contentType = file.type || 'application/octet-stream',
+            metadata = {
+                title: file.name,
+                mimeType: contentType,
+                parents: [
+                    {
+                        id: file_id
+                    }
+                ]
+            };
 
-            if (self.getInternetExplorerVersion() != -1)
-            {
-                result = self.IEBinary(event.target.result);
-            }
-            else
-            {
-                result = event.target.result;
-            }
-            var base64Data = btoa(event.target.result),
-                multipartRequestBody =
-                    delimiter +
-                    'Content-Type: application/json\r\n\r\n' +
-                    JSON.stringify(metadata) +
-                    delimiter +
-                    'Content-Type: ' + contentType + '\r\n' +
-                    'Content-Transfer-Encoding: base64\r\n' +
-                    '\r\n' +
-                    base64Data +
-                    close_delim;
-
-
-            $.ajax({
-                type: 'PUT',
-                url: 'https://www.googleapis.com/upload/drive/v2/files/' + file_id + '?uploadType=multipart&fields=' + self.config.DRIVE_FILE_INFO,
-                dataType: 'json',
-                data: multipartRequestBody,
-                processData: false,
-                headers: {
-                    authorization: 'Bearer ' + self.token,
-                    'Content-Type': 'multipart/mixed; boundary="' + this.config.BOUNDARY + '"'
-                },
-                async: true,
-                success: callback ? callback : self.success,
-                error: function (jqXHR, textStatus)
-                {
-                    error('не удалось изменить файл. Ошибка: ' + textStatus);
-                }
-            });
-        };
         if (self.getInternetExplorerVersion() != -1)
         {
-            reader.readAsArrayBuffer(f);
+            result = self.IEBinary(event.target.result);
         }
         else
         {
-            reader.readAsBinaryString(f);
+            result = event.target.result;
         }
+        var base64Data = btoa(event.target.result),
+            multipartRequestBody =
+                delimiter +
+                'Content-Type: application/json\r\n\r\n' +
+                JSON.stringify(metadata) +
+                delimiter +
+                'Content-Type: ' + contentType + '\r\n' +
+                'Content-Transfer-Encoding: base64\r\n' +
+                '\r\n' +
+                base64Data +
+                close_delim;
+
+
+        $.ajax({
+            type: 'PUT',
+            url: 'https://www.googleapis.com/upload/drive/v2/files/' + file_id + '?uploadType=multipart&fields=' + self.config.DRIVE_FILE_INFO,
+            dataType: 'json',
+            data: multipartRequestBody,
+            processData: false,
+            headers: {
+                authorization: 'Bearer ' + self.token,
+                'Content-Type': 'multipart/mixed; boundary="' + this.config.BOUNDARY + '"'
+            },
+            async: true,
+            success: callback ? callback : self.success,
+            error: function (jqXHR, textStatus)
+            {
+                error('не удалось изменить файл. Ошибка: ' + textStatus);
+            }
+        });
+    };
+    if (self.getInternetExplorerVersion() != -1)
+    {
+        reader.readAsArrayBuffer(f);
+    }
+    else
+    {
+        reader.readAsBinaryString(f);
     }
 };
 
-DriveAPI.prototype.createFolder = function (callback)
+/**
+ * Меняет уже загруженный в хранилище файл на новый, загруженный resumable-способом
+ *
+ * @param file - файл из input[type=file]
+ * @param file_id - идентификатор меняемого файла
+ * @param callback - функция-обработчик успешного изменения файла
+ */
+DriveAPI.prototype.updateResumable = function (file, file_id, callback)
 {
-    var self = this;
+    var self = this,
+        reader = new FileReader(),
+        upload_id;
 
+    var data = JSON.stringify({
+            title: file.name
+        }),
+        try_count = 0,
+        shank = file.size,
+        last_size = 0,
+        result,
+        len = 0;
+
+    $.ajax({
+        type: 'POST',
+        url: 'https://www.googleapis.com/upload/drive/v2/files/' + file_id + '?uploadType=resumable',
+        dataType: 'json',
+        contentType: 'application/json',
+        data: data,
+        processData: false,
+        headers: {
+            authorization: 'Bearer ' + self.token,
+            'X-Upload-Content-Type': file.type
+        },
+        async: true,
+        complete: function (headers)
+        {
+            if (headers.status == 200)
+            {
+                upload_id = headers.getResponseHeader('Location').split('upload_id=');
+                if (upload_id[1])
+                {
+                    upload_id = upload_id[1];
+                    len = self.readChunk(reader, file, shank, last_size);
+                    return false;
+                }
+                error('Не удалось записать файл. Повторите позже');
+            }
+        }
+    });
+
+    reader.onloadend = function(event)
+    {
+        if (self.getInternetExplorerVersion() != -1)
+        {
+            result = self.IEBinary(event.target.result);
+        }
+        else
+        {
+            result = event.target.result;
+        }
+
+        $.ajax({
+            type: 'PUT',
+            url: 'https://www.googleapis.com/upload/drive/v2/files?uploadType=resumable&upload_id=' + upload_id,
+            data: btoa(result),
+            contentType: file.type,
+            async: false,
+            headers: {
+                'Content-Range': self.getChunkRange(file.size, last_size),
+                'Content-Encoding': 'base64'
+            },
+            statusCode: {
+                308: function ()
+                {
+                    last_size += self.config.CHUNK_SIZE;
+                    shank -= len;
+                    len = self.readChunk(reader, file, shank, last_size);
+                },
+                503: function ()
+                {
+                    if (try_count < 4)
+                    {
+                        setTimeout( function ()
+                        {
+                            self.readChunk(reader, file, shank, last_size);
+                        }, Math.pow(2, try_count) * 1000 + Math.ceil(Math.random() * 1000));
+                        try_count++;
+                    }
+                    else
+                    {
+                        throw new Error('Не удалось записать файл. Повторите позже');
+                    }
+                }
+            },
+            success: callback ? callback : self.success
+        });
+    };
+};
+
+/**
+ * Создает директорию в хранилище и возвращает ее идентификатор
+ *
+ * @param callback - обработчик успешного создания директории
+ * @param parent_id - родительская директория для создаваемой
+ */
+DriveAPI.prototype.createFolder = function (callback, parent_id)
+{
     $.ajax({
         type: 'POST',
         url: 'https://www.googleapis.com/drive/v2/files?fields=id',
@@ -455,7 +656,7 @@ DriveAPI.prototype.createFolder = function (callback)
             parents:
                 [
                     {
-                        id: this.folder_id
+                        id: parent_id ? parent_id : this.folder_id
                     }
                 ],
             mimeType: "application/vnd.google-apps.folder"
@@ -475,6 +676,12 @@ DriveAPI.prototype.createFolder = function (callback)
     });
 };
 
+/**
+ * Удаляет файл или директорию из хранилища
+ *
+ * @param id - идентификатор обекта для удаления
+ * @param callback - обработчик успешного удаления
+ */
 DriveAPI.prototype.delete = function (id, callback)
 {
     var self = this;
@@ -497,6 +704,11 @@ DriveAPI.prototype.delete = function (id, callback)
     });
 };
 
+/**
+ * Возвращает версию браузера, если это IE
+ *
+ * @returns {number}
+ */
 DriveAPI.prototype.getInternetExplorerVersion = function ()
 {
     var rv = -1;
@@ -519,6 +731,11 @@ DriveAPI.prototype.getInternetExplorerVersion = function ()
     return rv;
 };
 
+/**
+ * Запрашивает у сервера токен для доступа к хранилищу и сохраняет его в объекте
+ *
+ * @returns {boolean}
+ */
 DriveAPI.prototype.setToken = function ()
 {
     if (!this.token)
@@ -548,6 +765,9 @@ DriveAPI.prototype.setToken = function ()
     return false;
 };
 
+/**
+ * Удаляет токен для доступа к хранилищу
+ */
 DriveAPI.prototype.deleteToken = function ()
 {
     this.token = false;
