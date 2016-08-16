@@ -175,7 +175,7 @@ DriveAPI.prototype.getFile = function (callback, file_id)
         success: callback ? callback : this.success,
         error: function ()
         {
-            error('Не удалось получить файл');
+            throw new Error('Не удалось получить файл');
         }
     });
     return false;
@@ -190,27 +190,30 @@ DriveAPI.prototype.getFile = function (callback, file_id)
  */
 DriveAPI.prototype.getFiles = function (callback, folder_id)
 {
-    var self = this;
+    if (folder_id)
+    {
+        var self = this;
 
-    $.ajax({
-        type: 'GET',
-        url: 'https://www.googleapis.com/drive/v2/files',
-        dataType: 'json',
-        data:
-        {
-            fields: 'items(' + this.config.DRIVE_FILE_INFO + ')',
-            q: "'" + (folder_id ? folder_id : this.folder_id)  + "' in parents"
-        },
-        headers: {
-            authorization: 'Bearer ' + this.token
-        },
-        async: true,
-        success: callback ? callback : this.success,
-        error: function ()
-        {
-            error('Не удалось получить список файлов из папки ' + self.label);
-        }
-    });
+        $.ajax({
+            type: 'GET',
+            url: 'https://www.googleapis.com/drive/v2/files',
+            dataType: 'json',
+            data:
+            {
+                fields: 'items(' + this.config.DRIVE_FILE_INFO + ')',
+                q: "'" + (folder_id ? folder_id : this.folder_id) + "' in parents"
+            },
+            headers: {
+                authorization: 'Bearer ' + this.token
+            },
+            async: true,
+            success: callback ? callback : this.success,
+            error: function ()
+            {
+                throw new Error('Не удалось получить список файлов из папки ' + self.label);
+            }
+        });
+    }
     return false;
 };
 
@@ -265,23 +268,45 @@ DriveAPI.prototype.uploadFile = function (file, callback, folder_id)
                 close_delim;
 
 
-        $.ajax({
-            type: 'POST',
-            url: 'https://content.googleapis.com/upload/drive/v2/files?uploadType=multipart&fields=' + self.config.DRIVE_FILE_INFO,
-            dataType: 'json',
-            data: multipartRequestBody,
-            processData: false,
-            headers: {
-                authorization: 'Bearer ' + self.token,
-                'Content-Type': 'multipart/mixed; boundary="' + self.config.BOUNDARY + '"'
-            },
-            async: true,
-            success: callback ? callback : self.success,
-            error: function (jqXHR, textStatus)
+        var try_count = 0,
+            send = function ()
             {
-                error('Не удалось записать файл. Ошибка: ' + textStatus);
-            }
-        });
+                $.ajax({
+                    type: 'POST',
+                    url: 'https://content.googleapis.com/upload/drive/v2/files?uploadType=multipart&fields=id,mimeType,description,title,webContentLink',
+                    dataType: 'json',
+                    data: multipartRequestBody,
+                    processData: false,
+                    headers: {
+                        authorization: 'Bearer ' + self.token,
+                        'Content-Type': 'multipart/mixed; boundary="' + self.config.BOUNDARY + '"'
+                    },
+                    async: true,
+                    error: function (jqXHR, textStatus)
+                    {
+                        throw new Error('Не удалось записать файл. Ошибка: ' + textStatus);
+                    },
+                    statusCode: {
+                        200: callback ? callback : self.success,
+                        502: function ()
+                        {
+                            if (try_count < 2)
+                            {
+                                setTimeout( function ()
+                                {
+                                    send();
+                                }, Math.ceil(Math.random() * 1000));
+                                try_count++;
+                            }
+                            else
+                            {
+                                throw new Error('Не удалось записать файл. Повторите позже');
+                            }
+                        }
+                    }
+                });
+            };
+        send();
     };
     if (self.getInternetExplorerVersion() != -1)
     {
@@ -341,7 +366,16 @@ DriveAPI.prototype.getChunkRange = function (total_size, last_size)
  */
 DriveAPI.prototype.uploadResumable = function (file, callback, folder_id)
 {
-    var self = this,
+    var counter = function ()
+        {
+            var num = 0;
+            return function()
+            {
+                return ++num;
+            }
+        },
+        c = counter(),
+        self = this,
         reader = new FileReader(),
         upload_id;
 
@@ -353,7 +387,6 @@ DriveAPI.prototype.uploadResumable = function (file, callback, folder_id)
             ],
             title: file.name
         }),
-        try_count = 0,
         shank = file.size,
         last_size = 0,
         result,
@@ -368,27 +401,43 @@ DriveAPI.prototype.uploadResumable = function (file, callback, folder_id)
         processData: false,
         headers: {
             authorization: 'Bearer ' + self.token,
-            'X-Upload-Content-Type': file.type
+            'X-Upload-Content-Type': file.type || 'application/octet-stream'
         },
         async: true,
-        complete: function (headers)
-        {
-            if (headers.status == 200)
+        statusCode: {
+            200: function (data)
             {
-                upload_id = headers.getResponseHeader('Location').split('upload_id=');
+                upload_id = data.getResponseHeader('Location').split('upload_id=');
                 if (upload_id[1])
                 {
                     upload_id = upload_id[1];
                     len = self.readChunk(reader, file, shank, last_size);
                     return false;
                 }
-                error('Не удалось записать файл. Повторите позже');
+                throw new Error('Не удалось записать файл. Повторите позже');
+            },
+            502: function ()
+            {
+                if (c() < 2)
+                {
+                    setTimeout( function ()
+                    {
+                        self.uploadResumable(file, callback, folder_id);
+                    }, Math.ceil(Math.random() * 1000));
+                }
+                else
+                {
+                    counter()();
+                    throw new Error('Не удалось записать файл. Повторите позже');
+                }
             }
         }
     });
 
     reader.onloadend = function(event)
     {
+        var try_count1 = 0, try_count2 = 0;
+
         if (self.getInternetExplorerVersion() != -1)
         {
             result = self.IEBinary(event.target.result);
@@ -402,7 +451,7 @@ DriveAPI.prototype.uploadResumable = function (file, callback, folder_id)
             type: 'PUT',
             url: 'https://www.googleapis.com/upload/drive/v2/files?uploadType=resumable&upload_id=' + upload_id,
             data: btoa(result),
-            contentType: file.type,
+            contentType: file.type || 'application/octet-stream',
             async: false,
             headers: {
                 'Content-Range': self.getChunkRange(file.size, last_size),
@@ -417,21 +466,36 @@ DriveAPI.prototype.uploadResumable = function (file, callback, folder_id)
                 },
                 503: function ()
                 {
-                    if (try_count < 4)
+                    if (try_count1 < 4)
                     {
                         setTimeout( function ()
                         {
                             self.readChunk(reader, file, shank, last_size);
                         }, Math.pow(2, try_count) * 1000 + Math.ceil(Math.random() * 1000));
-                        try_count++;
+                        try_count1++;
                     }
                     else
                     {
                         throw new Error('Не удалось записать файл. Повторите позже');
                     }
-                }
-            },
-            success: callback ? callback : self.success
+                },
+                502: function ()
+                {
+                    if (try_count2 < 2)
+                    {
+                        setTimeout( function ()
+                        {
+                            self.readChunk(reader, file, shank, last_size);
+                        }, Math.ceil(Math.random() * 1000));
+                        try_count2++;
+                    }
+                    else
+                    {
+                        throw new Error('Не удалось записать файл. Повторите позже');
+                    }
+                },
+                200: callback ? callback : this.success
+            }
         });
     };
 };
@@ -471,72 +535,99 @@ DriveAPI.prototype.readChunk = function (reader, file, shank, last_size)
 DriveAPI.prototype.updateFile = function (file, file_id, callback)
 {
     var self = this,
+        files = e.target.files,
         result;
 
     const delimiter = "\r\n--" + this.config.BOUNDARY + "\r\n";
     const close_delim = "\r\n--" + this.config.BOUNDARY + "--";
 
-    var reader = new FileReader();
-
-    reader.onloadend = function(event)
+    for (var i = 0, f; f = files[i]; i++)
     {
-        var contentType = file.type || 'application/octet-stream',
-            metadata = {
-                title: file.name,
-                mimeType: contentType,
-                parents: [
-                    {
-                        id: file_id
-                    }
-                ]
-            };
+        var file = f,
+            reader = new FileReader();
 
+        reader.onloadend = function(event)
+        {
+            var contentType = file.type || 'application/octet-stream',
+                metadata = {
+                    title: file.name,
+                    mimeType: contentType,
+                    parents: [
+                        {
+                            id: file_id
+                        }
+                    ]
+                };
+
+            if (self.getInternetExplorerVersion() != -1)
+            {
+                result = self.IEBinary(event.target.result);
+            }
+            else
+            {
+                result = event.target.result;
+            }
+            var base64Data = btoa(event.target.result),
+                multipartRequestBody =
+                    delimiter +
+                    'Content-Type: application/json\r\n\r\n' +
+                    JSON.stringify(metadata) +
+                    delimiter +
+                    'Content-Type: ' + contentType + '\r\n' +
+                    'Content-Transfer-Encoding: base64\r\n' +
+                    '\r\n' +
+                    base64Data +
+                    close_delim;
+
+            var try_count = 0,
+                send = function ()
+                {
+                    $.ajax({
+                        type: 'PUT',
+                        url: 'https://www.googleapis.com/upload/drive/v2/files/' + file_id + '?uploadType=multipart&fields=' + self.config.DRIVE_FILE_INFO,
+                        dataType: 'json',
+                        data: multipartRequestBody,
+                        processData: false,
+                        headers: {
+                            authorization: 'Bearer ' + self.token,
+                            'Content-Type': 'multipart/mixed; boundary="' + self.config.BOUNDARY + '"'
+                        },
+                        async: true,
+                        error: function (jqXHR, textStatus)
+                        {
+                            throw new Error('не удалось изменить файл. Ошибка: ' + textStatus);
+                        },
+                        statusCode:
+                        {
+                            200: callback ? callback : self.success,
+                            502: function ()
+                            {
+                                if (try_count < 2)
+                                {
+                                    setTimeout( function ()
+                                    {
+                                        send();
+                                    }, Math.ceil(Math.random() * 1000));
+                                    try_count++;
+                                }
+                                else
+                                {
+                                    throw new Error('Не удалось записать файл. Повторите позже');
+                                }
+                            }
+                        }
+                    });
+                };
+            send();
+        };
         if (self.getInternetExplorerVersion() != -1)
         {
-            result = self.IEBinary(event.target.result);
+            reader.readAsArrayBuffer(f);
         }
         else
         {
-            result = event.target.result;
+            reader.readAsBinaryString(f);
         }
-        var base64Data = btoa(event.target.result),
-            multipartRequestBody =
-                delimiter +
-                'Content-Type: application/json\r\n\r\n' +
-                JSON.stringify(metadata) +
-                delimiter +
-                'Content-Type: ' + contentType + '\r\n' +
-                'Content-Transfer-Encoding: base64\r\n' +
-                '\r\n' +
-                base64Data +
-                close_delim;
-
-
-        $.ajax({
-            type: 'PUT',
-            url: 'https://www.googleapis.com/upload/drive/v2/files/' + file_id + '?uploadType=multipart&fields=' + self.config.DRIVE_FILE_INFO,
-            dataType: 'json',
-            data: multipartRequestBody,
-            processData: false,
-            headers: {
-                authorization: 'Bearer ' + self.token,
-                'Content-Type': 'multipart/mixed; boundary="' + this.config.BOUNDARY + '"'
-            },
-            async: true,
-            success: callback ? callback : self.success,
-            error: function (jqXHR, textStatus)
-            {
-                error('не удалось изменить файл. Ошибка: ' + textStatus);
-            }
-        });
-    };
-    if (self.getInternetExplorerVersion() != -1)
-    {
-        reader.readAsArrayBuffer(f);
-    }
-    else
-    {
-        reader.readAsBinaryString(f);
     }
 };
 
@@ -585,7 +676,7 @@ DriveAPI.prototype.updateResumable = function (file, file_id, callback)
                     len = self.readChunk(reader, file, shank, last_size);
                     return false;
                 }
-                error('Не удалось записать файл. Повторите позже');
+                throw new Error('Не удалось записать файл. Повторите позже');
             }
         }
     });
@@ -643,37 +734,61 @@ DriveAPI.prototype.updateResumable = function (file, file_id, callback)
  * Создает директорию в хранилище и возвращает ее идентификатор
  *
  * @param callback - обработчик успешного создания директории
- * @param parent_id - родительская директория для создаваемой
  */
-DriveAPI.prototype.createFolder = function (callback, parent_id)
+DriveAPI.prototype.createFolder = function (callback)
 {
-    $.ajax({
-        type: 'POST',
-        url: 'https://www.googleapis.com/drive/v2/files?fields=id',
-        dataType: 'json',
-        data: JSON.stringify({
-            title: Date.now(),
-            parents:
-                [
+    var self = this;
+
+    var try_count = 0,
+        send = function ()
+        {
+            $.ajax({
+                type: 'POST',
+                url: 'https://www.googleapis.com/drive/v2/files?fields=id',
+                dataType: 'json',
+                data: JSON.stringify({
+                    title: Date.now(),
+                    parents:
+                        [
+                            {
+                                id: self.folder_id
+                            }
+                        ],
+                    mimeType: "application/vnd.google-apps.folder"
+                }),
+                processData: false,
+                headers:
+                {
+                    authorization: 'Bearer ' + self.token,
+                    'Content-Type': 'application/json'
+                },
+                async: true,
+                error: function (jqXHR, textStatus)
+                {
+                    throw new Error('Не удалось создать директорию. Ошибка: ' + textStatus);
+                },
+                statusCode:
+                {
+                    200: callback ? callback : self.success,
+                    502: function ()
                     {
-                        id: parent_id ? parent_id : this.folder_id
+                        if (try_count < 2)
+                        {
+                            setTimeout( function ()
+                            {
+                                send();
+                            }, Math.ceil(Math.random() * 1000));
+                            try_count++;
+                        }
+                        else
+                        {
+                            throw new Error('Не удалось записать файл. Повторите позже');
+                        }
                     }
-                ],
-            mimeType: "application/vnd.google-apps.folder"
-        }),
-        processData: false,
-        headers:
-        {
-            authorization: 'Bearer ' + this.token,
-            'Content-Type': 'application/json'
-        },
-        async: true,
-        success: callback ? callback : this.success,
-        error: function (jqXHR, textStatus)
-        {
-            error('Не удалось создать директорию. Ошибка: ' + textStatus);
-        }
-    });
+                }
+            });
+        };
+    send();
 };
 
 /**
@@ -699,7 +814,7 @@ DriveAPI.prototype.delete = function (id, callback)
         success: callback ? callback : this.success,
         error: function (jqXHR, textStatus)
         {
-            error('Не удалось удалить файл или директорию. Ошибка: ' + textStatus);
+            throw new Error('Не удалось удалить файл или директорию. Ошибка: ' + textStatus);
         }
     });
 };
