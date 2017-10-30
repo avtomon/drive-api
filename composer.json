@@ -3,7 +3,7 @@
   "description": "jQuery wrapper to work with Google Drive API without auth",
   "keywords": ["google"],
   "type": "project",
-  "minimum-stability": "dev",
+  "minimum-stability": "stable",
   "config": {
     "process-timeout": 1800
   },
