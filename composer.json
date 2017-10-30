@@ -1,0 +1,14 @@
+{
+  "name": "avtomon/driveAPI",
+  "description": "jQuery wrapper to work with Google Drive API without auth",
+  "keywords": ["google"],
+  "type": "project",
+  "minimum-stability": "dev",
+  "config": {
+    "process-timeout": 1800
+  },
+  "require": {
+    "google/google-api-php-client": "^2.0",
+    "bower-asset/jQuery": "*"
+  }
+}

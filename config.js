@@ -1,8 +1,7 @@
-/**
- * Created by avtomon on 29.01.2016.
- */
-
 config = {
+    /**
+     * Адреса папок на Google-диске куда будут падать файлы
+     */
     FOLDERS: {
         'Видеолекция': '0B-e8MNz22zZvflNxd2NzYWxnSVFxdDFDX2ZpVEdXaUo3dVRQQmJjMWttTnRtRUNNZG9YNHc',
         'Конспект лекций': '0B-e8MNz22zZvfnZhY2RQWTNCQUdXemtzOFV5TVJlQ1lqa0JyUVJFbXJYd2dfWHFQR1ZGTW8',
@@ -14,8 +13,20 @@ config = {
         'Книга': '0B-e8MNz22zZvfkxRMVNNWUR0eXdxd0p4QWJpN3NIOVVkQTI4enh1RDBYd3F1SUxlbF9tQk0',
         'Файл': '0B-e8MNz22zZvfnY4em13Z3hQWFZLN0tvUDF3SC1xS04tY1lWOVZXTV9MNnl4QU1ubE1FeGs'
     },
+    /**
+     * Какую информацию о файлах спрашивать у Гугла
+     */
     DRIVE_FILE_INFO: 'thumbnailLink,id,mimeType,description,title,webContentLink',
+    /**
+     * Резделитель для делений файла на чанки
+     */
     BOUNDARY: '-------314159265358979323846',
+    /**
+     * Размер чанка
+     */
     CHUNK_SIZE: 5242880,
+    /**
+     * Путь к файлу получения токена
+     */
     SERVER_URL: 'getToken.php'
 };
