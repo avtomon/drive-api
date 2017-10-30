@@ -8,7 +8,7 @@
     "process-timeout": 1800
   },
   "require": {
-    "google/google-api-php-client": "^2.0",
+    "google/google-api-php-client": "*",
     "bower-asset/jQuery": "*"
   }
 }
