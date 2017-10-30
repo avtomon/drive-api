@@ -8,7 +8,13 @@
     "process-timeout": 1800
   },
   "require": {
-    "google/google-api-php-client": "dev-master",
+    "google/google-api-php-client": "*",
     "bower-asset/jQuery": "*"
-  }
+  },
+  "repositories": [
+    {
+      "type": "git",
+      "url": "https://github.com/google/google-api-php-client.git"
+    }
+  ]
 }
