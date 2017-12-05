@@ -2,11 +2,9 @@
 
 require_once 'config.php';
 
-require_once AUTOLOAD_PATH;
-
 $client = new Google_Client();
 
-$key = file_get_contents(KEY_FILE_LOCATION);
+$key = file_get_contents($_SERVER['DOCUMENT_ROOT'] . '/' . KEY_FILE_LOCATION);
 $cred = new Google_Auth_AssertionCredentials(
     SERVICE_ACCOUNT_NAME,
     array('https://www.googleapis.com/auth/drive'),
