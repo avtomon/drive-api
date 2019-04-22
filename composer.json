@@ -1,5 +1,5 @@
 {
-  "name": "avtomon/driveAPI",
+  "name": "avtomon/drive-api",
   "description": "jQuery wrapper to work with Google Drive API without auth",
   "keywords": ["google"],
   "type": "project",
